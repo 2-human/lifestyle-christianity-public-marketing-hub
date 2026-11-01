@@ -2,7 +2,7 @@
  * is published (tools/marketing-hub/encrypt-bundle.py): ask for the password, decrypt in the browser (PBKDF2-SHA256 to
  * AES-256-GCM, then gunzip), run the files in order, start the hub. The derived key stays in this tab's sessionStorage. */
 (function () {
-  var FILES = ['data/facts.js', 'data/audit.js', 'data/evidence.js', 'data/results.js', 'data/assets.js', 'views.js'], KEY = 'lc-gate-key';
+  var FILES = ['data/facts.js', 'data/audit.js', 'data/evidence.js', 'data/results.js', 'data/assets.js', 'data/proposal.js', 'views.js'], KEY = 'lc-gate-key';
   var $ = function (id) { return document.getElementById(id); };
   var b64 = function (s) { return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); }); };
   var enc = function (u) { var s = ''; u.forEach(function (b) { s += String.fromCharCode(b); }); return btoa(s); };
