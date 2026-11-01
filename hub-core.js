@@ -1,6 +1,6 @@
 /* Marketing Hub chassis: three panels (navigation · main · drawer).
  * Knows nothing about the client. Client screens register themselves in views.js:
- *   Hub.nav      = [{ sec, off?, items:[{ id, label, route, cnt? }] }]   left menu, first-level entries only; off = shown, not linked
+ *   Hub.nav      = [{ sec, items:[{ id, label, route, cnt? }] }]   left menu, first-level entries only
  *   Hub.home     = the route an empty address opens
  *   Hub.route(prefix, fn(rest, query) → html)                      main panel, longest prefix wins
  *   Hub.drawer(type, fn(id) → { title, tabs:[[key,label,html]] })  right panel, opened by [data-d="type:id"]
@@ -64,7 +64,6 @@
       var rows = s.items.filter(function (it) { return !f || it.label.toLowerCase().indexOf(f) >= 0; });
       if (!rows.length) return '';
       return '<div class="sec">' + esc(s.sec) + '</div><ul>' + rows.map(function (it) {
-        if (s.off) return '<li><span class="row off" aria-disabled="true"><span>' + esc(it.label) + '</span></span></li>';
         var on = cur === it.route || cur.indexOf(it.route + '/') === 0;
         var cnt = typeof it.cnt === 'function' ? it.cnt() : it.cnt;
         return '<li><a class="row' + (on ? ' cur' : '') + '" href="#' + it.route + '"' + (on ? ' aria-current="page"' : '') + '><span>' + esc(it.label) + '</span>' + (cnt != null ? '<span class="cnt">' + esc(cnt) + '</span>' : '') + '</a></li>';
