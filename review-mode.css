@@ -1,0 +1,181 @@
+/* review-mode.css — all widget styling scoped under [data-review-mode="on"].
+ * Tokens resolved to this brand: primary-deep #b08d57, darker #8a6c3f,
+ * accent-cool (lavender) #C5CAE9, neutral-deep #1f2330. */
+[data-review-mode="on"]{--rw-deep:#b08d57;--rw-dark:#8a6c3f;--rw-cool:#C5CAE9;--rw-ink:#1f2330;--rw-surf:#fff;--rw-amber:#d9822b}
+[data-review-mode="on"] body{padding-top:46px}
+
+/* commentable elements */
+/* Marketing Hub (MH-95): the hub is dense (tables, cards), so the faint outline shows on hover only, and position:relative
+   is set only on elements that carry comments (their status dots need it), never on every anchor: a blanket relative
+   would undo the hub's sticky table headers in review mode. */
+[data-review-mode="on"] [data-comment-id]:hover{outline:1px dashed rgba(220,70,70,.45);outline-offset:2px}
+[data-review-mode="on"] .has-comment,[data-review-mode="on"] .has-applied-comment{position:relative}
+[data-review-mode="on"] [data-comment-id].has-comment{outline:1.5px dashed rgba(220,70,70,.65)}
+[data-review-mode="on"] [data-comment-id].rw-spot{outline:2px solid var(--rw-deep);animation:rwpulse 1.1s ease}
+[data-review-mode="on"] [data-comment-id].rw-active-anchor{outline:2.5px solid var(--rw-deep);outline-offset:2px;box-shadow:0 0 0 4px rgba(220,70,70,.18)}
+@keyframes rwpulse{0%{box-shadow:0 0 0 0 rgba(220,70,70,.5)}100%{box-shadow:0 0 0 14px rgba(220,70,70,0)}}
+
+/* floating add-comment pill (single, follows the deepest hovered element) */
+[data-review-mode="on"] .review-floating-pill{position:fixed;z-index:9997;display:none;background:var(--rw-deep);color:#fff;border:none;border-radius:999px;font:600 12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;padding:6px 11px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.28)}
+[data-review-mode="on"] .review-floating-pill:hover{background:var(--rw-dark)}
+
+/* banner */
+[data-review-mode="on"] .review-banner{position:fixed;top:0;left:0;right:0;height:46px;z-index:9999;background:var(--rw-ink);color:#fff;display:flex;align-items:center;gap:14px;padding:0 16px;font:600 13.5px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;box-shadow:0 1px 6px rgba(0,0,0,.2)}
+[data-review-mode="on"] .review-banner .rw-title{font-family:Georgia,serif;color:#fff}
+[data-review-mode="on"] .review-banner .rw-local{background:var(--rw-amber);color:#fff;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:600}
+[data-review-mode="on"] .review-banner .rw-spacer{flex:1}
+[data-review-mode="on"] .review-banner .rw-name{opacity:.85;font-weight:400;font-size:12.5px}
+[data-review-mode="on"] .review-banner button{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:6px;padding:6px 12px;font:inherit;cursor:pointer}
+[data-review-mode="on"] .review-banner button:hover{background:rgba(255,255,255,.12)}
+
+/* sidebar */
+[data-review-mode="on"] .review-sidebar{position:fixed;top:46px;right:0;bottom:0;width:330px;z-index:9998;background:var(--rw-surf);border-left:1px solid #d9dbe0;box-shadow:-2px 0 12px rgba(0,0,0,.08);display:flex;flex-direction:column;transition:transform .2s}
+[data-review-mode="on"] .review-sidebar.rw-collapsed{transform:translateX(330px)}
+[data-review-mode="on"] .review-sidebar h3{margin:0;padding:14px 16px;font:700 14px/1 -apple-system,sans-serif;border-bottom:1px solid #eceef0;display:flex;justify-content:space-between;align-items:center}
+[data-review-mode="on"] .review-sidebar h3 .rw-count{color:var(--rw-deep)}
+[data-review-mode="on"] .review-list{flex:1;overflow-y:auto;padding:8px}
+[data-review-mode="on"] .review-empty{color:#65676b;font-size:13px;padding:18px 12px;text-align:center}
+[data-review-mode="on"] .review-row{border:1px solid #eceef0;border-radius:8px;padding:10px 11px;margin-bottom:8px;cursor:pointer;background:#fff}
+[data-review-mode="on"] .review-row:hover{border-color:var(--rw-cool);background:#fafbff}
+[data-review-mode="on"] .review-row.rw-selected{border-color:var(--rw-deep);background:#fff4f4;box-shadow:inset 3px 0 0 var(--rw-deep)}
+[data-review-mode="on"] .review-row .rw-meta{font-size:11px;color:#65676b;margin-bottom:4px;display:flex;gap:6px}
+[data-review-mode="on"] .review-row .rw-meta b{color:var(--rw-ink)}
+[data-review-mode="on"] .review-row .rw-body{font-size:13.5px;color:#1a1a1a;white-space:pre-wrap}
+[data-review-mode="on"] .review-row .rw-repl{margin-top:5px;font-size:12.5px;color:#1a6c3a;background:#eef7f0;border-left:3px solid #1a6c3a;padding:4px 7px;border-radius:3px}
+[data-review-mode="on"] .review-row .rw-anchor{margin-top:5px;font:11px ui-monospace,Menlo,monospace;color:#9aa0a6}
+[data-review-mode="on"] .review-row .rw-acts{margin-top:7px;display:flex;gap:8px}
+[data-review-mode="on"] .review-row .rw-acts button{background:none;border:none;color:#65676b;font:600 12px/1 sans-serif;cursor:pointer;padding:2px}
+[data-review-mode="on"] .review-row .rw-acts button:hover{color:var(--rw-deep);text-decoration:underline}
+
+/* modal */
+[data-review-mode="on"] .review-modal-overlay{position:fixed;inset:0;z-index:10000;background:rgba(31,32,36,.45);display:flex;align-items:center;justify-content:center;padding:20px}
+[data-review-mode="on"] .review-modal{background:#fff;border-radius:12px;width:100%;max-width:440px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+[data-review-mode="on"] .review-modal h4{margin:0 0 4px;font:700 16px/1.2 -apple-system,sans-serif}
+[data-review-mode="on"] .review-modal .rw-ctx{font-size:12px;color:#65676b;margin-bottom:12px;font-family:ui-monospace,Menlo,monospace}
+[data-review-mode="on"] .review-modal textarea{width:100%;border:1px solid #ccd0d5;border-radius:8px;padding:9px;font:14px -apple-system,sans-serif;resize:vertical;min-height:74px;margin-bottom:8px}
+[data-review-mode="on"] .review-modal .rw-modal-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+[data-review-mode="on"] .review-modal button{border-radius:8px;padding:9px 16px;font:600 14px/1 sans-serif;cursor:pointer;border:1px solid transparent}
+[data-review-mode="on"] .review-modal .rw-cancel{background:#e7e9ec;color:#1a1a1a}
+[data-review-mode="on"] .review-modal .rw-save{background:var(--rw-deep);color:#fff}
+[data-review-mode="on"] .review-modal .rw-save:hover{background:var(--rw-dark)}
+@media (max-width:900px){[data-review-mode="on"] .review-sidebar{width:84vw}}
+
+/* status tabs */
+[data-review-mode="on"] .review-tabs{display:flex;border-bottom:1px solid #eceef0;background:#fafbfc}
+[data-review-mode="on"] .review-tabs button{flex:1;border:none;background:none;padding:9px 4px;font:600 12px/1 -apple-system,sans-serif;color:#65676b;cursor:pointer;border-bottom:2px solid transparent}
+[data-review-mode="on"] .review-tabs button:hover{color:#1a1a1a}
+[data-review-mode="on"] .review-tabs button.on{color:var(--rw-deep);border-bottom-color:var(--rw-deep)}
+[data-review-mode="on"] .review-tabs .rw-c{display:inline-block;min-width:16px;padding:0 4px;border-radius:8px;background:#e7e9ec;color:#65676b;font-size:10.5px;font-weight:700}
+[data-review-mode="on"] .review-tabs button.on .rw-c{background:var(--rw-deep);color:#fff}
+
+/* status badge on each row */
+[data-review-mode="on"] .rw-badge{text-transform:uppercase;letter-spacing:.04em;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:7px}
+[data-review-mode="on"] .rw-badge.rw-pending{background:#fdf0dc;color:#b9711b}
+[data-review-mode="on"] .rw-badge.rw-applied{background:#e7f3ea;color:#2f7d4e}
+[data-review-mode="on"] .rw-badge.rw-archived{background:#eceef0;color:#828a93}
+
+/* applied-comment outline on the anchored element */
+[data-review-mode="on"] [data-comment-id].has-applied-comment{outline:1.5px dashed rgba(47,125,78,.55)}
+
+/* per-action button tints */
+[data-review-mode="on"] .review-row .apply-btn:hover{color:#2f7d4e}
+[data-review-mode="on"] .review-row .archive-btn:hover{color:#828a93}
+[data-review-mode="on"] .review-row .restore-btn:hover{color:var(--rw-cool);filter:brightness(.6)}
+[data-review-mode="on"] .review-row .edit-btn:hover{color:var(--rw-deep)}
+[data-review-mode="on"] .review-row .delete-btn:hover{color:#c0392b}
+
+/* merged Open/Resolved state */
+[data-review-mode="on"] .rw-badge.rw-resolved{background:#e7f3ea;color:#2f7d4e}
+[data-review-mode="on"] .review-row .rw-resolution{margin-top:5px;font-size:12.5px;color:#2f7d4e;background:#eef7f0;border-left:3px solid #2f7d4e;padding:4px 7px;border-radius:3px}
+[data-review-mode="on"] .review-row .resolve-btn:hover{color:#2f7d4e}
+
+/* ───── Cross-LP scope chooser (added 2026-06-30) ─────────────────────────── */
+[data-review-mode="on"] .review-modal .rw-scope{margin:6px 0 4px;border-top:1px dashed #ddd;padding-top:10px}
+[data-review-mode="on"] .review-modal .rw-scope-head{font:600 12.5px/1.3 -apple-system,sans-serif;color:#1f2330;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+[data-review-mode="on"] .review-modal .rw-scope-slot{font:600 10px/1 ui-monospace,Menlo,monospace;background:#f1eef8;color:#4a4a99;padding:3px 7px;border-radius:4px;letter-spacing:.02em}
+[data-review-mode="on"] .review-modal .rw-scope-radios{display:flex;flex-direction:column;gap:6px}
+[data-review-mode="on"] .review-modal .rw-scope-opt{display:flex;align-items:center;gap:8px;font:13.5px -apple-system,sans-serif;color:#1f2330;cursor:pointer;padding:2px 0}
+[data-review-mode="on"] .review-modal .rw-scope-opt input{accent-color:#b08d57}
+[data-review-mode="on"] .review-modal .rw-scope-lbl{font-weight:500}
+[data-review-mode="on"] .review-modal .rw-scope-hint{color:#65676b;font-size:12px}
+[data-review-mode="on"] .review-modal .rw-scope-picker{margin-top:10px;max-height:200px;overflow-y:auto;border:1px solid #eceef0;padding:8px 10px;border-radius:6px;background:#fafbfc}
+[data-review-mode="on"] .review-modal .rw-scope-empty{font-size:12px;color:#828a93;font-style:italic}
+[data-review-mode="on"] .review-modal .rw-scope-cluster{font:700 10px/1 -apple-system,sans-serif;color:#b08d57;letter-spacing:.1em;text-transform:uppercase;margin:8px 0 4px}
+[data-review-mode="on"] .review-modal .rw-scope-cluster:first-child{margin-top:0}
+[data-review-mode="on"] .review-modal .rw-scope-page{display:flex;align-items:center;gap:7px;font:12.5px -apple-system,sans-serif;color:#1f2330;padding:3px 0;cursor:pointer}
+[data-review-mode="on"] .review-modal .rw-scope-page input{accent-color:#b08d57}
+[data-review-mode="on"] .review-modal .rw-scope-page-slug{color:#828a93;font:10.5px ui-monospace,Menlo,monospace}
+
+/* Sidebar scope badge */
+[data-review-mode="on"] .review-row .rw-scope-badge{background:#eef7f0;color:#2f7d4e;border-radius:6px;padding:1px 7px;font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:help}
+
+/* Comment status indicators (2026-07, reworked 2026-09-22): a component that
+ * carries comments gets a HEAVIER DASHED outline — red while any comment is
+ * open, green when only resolved remain — plus a vertical stack of dots just
+ * outside the right border: one red dot per open comment, one green per
+ * resolved. A SOLID outline is reserved for the one comment you clicked
+ * (.rw-active-anchor below); before this, every commented element was solid,
+ * so nothing stood out when you selected one. */
+[data-review-mode="on"] [data-comment-id].has-comment,[data-review-mode="on"] [data-slot].has-comment{outline:1.5px dashed rgba(220,70,70,.65);outline-offset:2px}
+[data-review-mode="on"] [data-comment-id].has-applied-comment,[data-review-mode="on"] [data-slot].has-applied-comment{outline:1.5px dashed rgba(47,125,78,.55);outline-offset:2px}
+[data-review-mode="on"] .has-comment,[data-review-mode="on"] .has-applied-comment{position:relative}
+[data-review-mode="on"] .rw-dots{position:absolute;top:6px;left:100%;margin-left:6px;display:flex;flex-direction:column;gap:4px;z-index:6;pointer-events:none}
+[data-review-mode="on"] .rw-dot{width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 1.5px #fff,0 1px 2px rgba(0,0,0,.3)}
+[data-review-mode="on"] .rw-dot-active{background:var(--rw-deep)}
+[data-review-mode="on"] .rw-dot-resolved{background:#2f7d4e}
+
+/* Global comment list (2026-07-21): the sidebar lists every comment across the
+ * whole hub, grouped by page. A group header labels each page (the current page
+ * floats to the top). Comments whose component lives on another page are marked
+ * `.rw-offpage` and carry an "opens ↗" chip — clicking them navigates there. */
+[data-review-mode="on"] .rw-group{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:1;margin:10px 2px 6px;padding:4px 2px;font:600 11px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:#8a9098;background:var(--rw-surf);border-bottom:1px solid #eceef0}
+[data-review-mode="on"] .rw-group:first-child{margin-top:2px}
+[data-review-mode="on"] .rw-group.rw-group-here{color:var(--rw-deep)}
+[data-review-mode="on"] .rw-group .rw-group-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-review-mode="on"] .rw-group .rw-group-count{flex:none;background:#eef0f3;color:#65676b;border-radius:999px;padding:1px 7px;font-size:10.5px}
+[data-review-mode="on"] .rw-group.rw-group-here .rw-group-count{background:var(--rw-deep);color:#fff}
+[data-review-mode="on"] .review-row.rw-offpage{border-style:dashed}
+[data-review-mode="on"] .review-row .rw-live{flex:none;color:var(--rw-deep);font-weight:700;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;text-decoration:none;border:1px solid #f0c9cc;border-radius:6px;padding:1px 7px;background:#fff}
+[data-review-mode="on"] .review-row .rw-live:hover{background:#fdf1f1}
+[data-review-mode="on"] .review-row .rw-live-none{color:#8a918d;border-color:#e2e5e3;cursor:default}
+[data-review-mode="on"] .review-row .rw-jump{flex:none;color:var(--rw-deep);font-weight:600;letter-spacing:.02em}
+
+/* Scope toggle (2026-07-21): "This page" (default) vs "All pages" segmented
+ * control above the Open/Resolved tabs. */
+[data-review-mode="on"] .rw-scopebar{display:flex;gap:4px;margin:10px 12px;padding:3px;background:#eef0f3;border-radius:8px}
+[data-review-mode="on"] .rw-scopebar button{flex:1;border:none;background:none;padding:6px 8px;border-radius:6px;font:600 11.5px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#65676b;cursor:pointer;transition:background .12s,color .12s}
+[data-review-mode="on"] .rw-scopebar button.on{background:#fff;color:var(--rw-deep);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+[data-review-mode="on"] .rw-scopebar button:hover:not(.on){color:var(--rw-ink)}
+
+/* Selected comment (2026-09-22): the element the clicked comment is attached to.
+ * Declared last, and matching [data-slot] too, so cross-page comments highlight
+ * the right component on whichever LP is open. Solid = selected; dashed = has
+ * comments but isn't selected. */
+[data-review-mode="on"] [data-comment-id].rw-active-anchor,
+[data-review-mode="on"] [data-slot].rw-active-anchor,
+[data-review-mode="on"] .rw-active-anchor{outline:2.5px solid var(--rw-deep);outline-offset:3px;box-shadow:0 0 0 4px rgba(220,70,70,.18);border-radius:2px}
+
+/* ───── Marketing Hub layout in review mode (MH-95, 27 Oct 2026) ─────
+   The hub is a full-height app (body 100vh, overflow hidden) with its own fixed right drawer. In review mode the
+   widget banner (46px) sits above the hub's bar and the widget sidebar (330px) takes the right edge, so the hub
+   shrinks to the space left and its drawers move below the banner and left of the sidebar. When the sidebar is
+   hidden (banner button, or by default on phones) the hub gets its full width back. */
+[data-review-mode="on"] body.app-body{padding-top:46px;padding-right:330px;height:100vh}
+[data-review-mode="on"] .app-drawer{top:95px;right:330px;max-width:calc(100vw - 330px)}
+[data-review-mode="on"] .app-drawer.wide,[data-review-mode="on"] .app-drawer.xwide{width:min(1100px, calc(100vw - 360px));min-width:0}
+[data-review-mode="on"] .app-ldrawer{top:95px;max-width:calc(100vw - 330px)}
+[data-review-mode="on"][data-rw-side="hidden"] body.app-body{padding-right:0}
+[data-review-mode="on"][data-rw-side="hidden"] .app-drawer{right:0;max-width:100vw}
+[data-review-mode="on"][data-rw-side="hidden"] .app-drawer.wide,[data-review-mode="on"][data-rw-side="hidden"] .app-drawer.xwide{width:min(1100px, 100vw)}
+[data-review-mode="on"][data-rw-side="hidden"] .app-ldrawer{max-width:100vw}
+[data-review-mode="on"] .review-banner .rw-side-btn{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:5px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+[data-review-mode="on"] .review-banner .rw-route{font-weight:400;opacity:.75;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+[data-review-mode="on"] .review-row .rw-drawer-chip{flex:none;color:#5b6270;font-size:10px;border:1px solid #d9dbe0;border-radius:6px;padding:1px 6px}
+@media (max-width:900px){
+  [data-review-mode="on"] body.app-body{padding-right:0}
+  [data-review-mode="on"] .app-drawer{right:0;max-width:100vw}
+  [data-review-mode="on"] .review-banner .rw-title,[data-review-mode="on"] .review-banner .rw-route{display:none}
+}
+[data-review-mode="on"] .review-row .rw-meta{flex-wrap:wrap;align-items:center}
+[data-review-mode="on"] .review-row .rw-drawer-chip{white-space:normal;max-width:100%;overflow-wrap:anywhere}
+@media (max-width:600px){[data-review-mode="on"] .review-banner .rw-name{display:none}[data-review-mode="on"] .review-banner{gap:8px;padding:0 10px}}
