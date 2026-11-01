@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=8">
+<link rel="stylesheet" href="app.css?v=9">
 </head>
 <body data-brand="all">
 <header class="app-bar">
@@ -27,7 +27,8 @@
 </div>
 <aside class="app-drawer" id="app-drawer" aria-hidden="true" aria-labelledby="drawer-title">
   <div class="drawer-head">
-    <div><h2 id="drawer-title"></h2><div class="drawer-sub" id="drawer-sub"></div></div>
+    <div class="drawer-nav"><button type="button" id="drawer-back" aria-label="Previous drawer" disabled>←</button><button type="button" id="drawer-fwd" aria-label="Next drawer" disabled>→</button></div>
+    <div class="drawer-ttl"><h2 id="drawer-title"></h2><div class="drawer-sub" id="drawer-sub"></div></div>
     <button class="drawer-close" id="drawer-close" aria-label="Close the details">×</button>
   </div>
   <div class="drawer-body" id="drawer-body"></div>
@@ -43,7 +44,7 @@
   </form>
 </div>
 <div id="chart-tip" class="chart-tip" hidden></div>
-<script src="hub-core.js?v=5"></script>
+<script src="hub-core.js?v=6"></script>
 <script src="gate.js?v=2"></script>
 <script src="review.config.js?v=1"></script>
 <script src="review-bootstrap.js?v=1"></script>

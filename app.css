@@ -132,6 +132,8 @@ img { max-width:100%; }
 .app-drawer.open { transform:none; visibility:visible; } .app-drawer.wide { width:640px; }
 .drawer-head { display:flex; align-items:flex-start; gap:10px; justify-content:space-between; padding:14px 16px 10px; border-bottom:1px solid var(--line); }
 .drawer-head h2 { margin:0; font-size:16px; } .drawer-sub { margin-top:4px; display:flex; gap:5px; flex-wrap:wrap; }
+.drawer-nav { display:flex; gap:2px; flex:0 0 auto; } .drawer-ttl { flex:1 1 auto; min-width:0; }
+.drawer-nav button { width:28px; height:26px; border:1px solid var(--line); background:#fff; border-radius:5px; font-size:15px; line-height:1; color:var(--ink); cursor:pointer; padding:0; } .drawer-nav button:hover:not(:disabled) { border-color:#b9b1a8; } .drawer-nav button:disabled { color:#c9c3bb; cursor:default; background:#faf8f5; }
 .drawer-close { border:0; background:none; font-size:24px; line-height:1; cursor:pointer; color:var(--mute); }
 .drawer-body { overflow:auto; padding:0 16px 40px; font-size:13.5px; flex:1 1 auto; }
 .drawer-body h3 { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--mute); margin:18px 0 7px; }

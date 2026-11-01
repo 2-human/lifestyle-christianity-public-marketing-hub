@@ -73,9 +73,19 @@
   }
 
   /* ─── drawer ─── */
-  function openDrawer(ref, tab, fromRoute) {
+  /* Trail: the drawers opened since the last one opened from outside the drawer. Arrows move along it; opening a new
+     drawer from inside cuts anything ahead of the current one, and closing the drawer ends the trail. */
+  var trail = [], at = -1, fromDrawer = false;
+  document.addEventListener('click', function (e) { fromDrawer = !!(e.target.closest && e.target.closest('#app-drawer')); }, true);
+  function moveTrail(step) { var e = trail[at + step]; if (!e) return; trail[at].top = $('drawer-body').scrollTop; at += step; openDrawer(e.ref, e.tab, false, true); $('drawer-body').scrollTop = e.top || 0; }
+  function drawArrows() {
+    [['drawer-back', -1, 'Back to: '], ['drawer-fwd', 1, 'Forward to: ']].forEach(function (b) { var e = trail[at + b[1]], el = $(b[0]); el.disabled = !e; el.title = e ? b[2] + e.title : ''; });
+  }
+  function openDrawer(ref, tab, fromRoute, moving) {
     var i = ref.indexOf(':'), type = ref.slice(0, i), id = ref.slice(i + 1), fn = DRAWERS[type], item = fn && fn(id);
     if (!item) { closeDrawer(true); return; }
+    var same = trail[at] && trail[at].ref === ref, top = same ? $('drawer-body').scrollTop : 0;
+    if (same && !fromRoute && !moving && !fromDrawer && tab === undefined) { trail = [trail[at]]; at = 0; }   /* the same row clicked again in main starts over */
     state.d = ref; var tabs = item.tabs, cur = tabs.filter(function (t) { return t[0] === tab; })[0] || tabs[0];
     state.dt = cur[0];
     $('drawer-title').textContent = item.title;
@@ -83,6 +93,10 @@
     $('drawer-body').innerHTML = (tabs.length > 1 ? '<div class="dtabs" role="tablist">' + tabs.map(function (t) {
       return '<button role="tab" data-dt="' + esc(t[0]) + '" aria-selected="' + (t[0] === cur[0]) + '">' + esc(t[1]) + '</button>'; }).join('') + '</div>' : '') +
       '<div class="dpanel">' + cur[2] + '</div>';
+    $('drawer-body').scrollTop = top;
+    if (same) trail[at].tab = cur[0];
+    else if (!moving) { if (fromDrawer && at >= 0) { trail = trail.slice(0, at + 1); at++; } else { trail = []; at = 0; } trail[at] = { ref: ref, tab: cur[0], title: item.title }; }
+    fromDrawer = false; drawArrows();
     $('app-drawer').classList.add('open'); $('app-drawer').setAttribute('aria-hidden', 'false');
     $('app-drawer').classList.toggle('wide', !!item.wide);
     document.querySelectorAll('.sel').forEach(function (e) { e.classList.remove('sel'); });
@@ -90,7 +104,7 @@
     if (!fromRoute) { var q = Object.assign({}, state.query, { d: ref, dt: tabs[0][0] === cur[0] ? '' : cur[0] }); history.replaceState(null, '', hashFor(state.path, q)); state.query = q; }
   }
   function closeDrawer(fromRoute) {
-    $('app-drawer').classList.remove('open'); $('app-drawer').setAttribute('aria-hidden', 'true'); state.d = null;
+    $('app-drawer').classList.remove('open'); $('app-drawer').setAttribute('aria-hidden', 'true'); state.d = null; trail = []; at = -1;
     document.querySelectorAll('.sel').forEach(function (e) { e.classList.remove('sel'); });
     if (!fromRoute && state.query.d) { var q = Object.assign({}, state.query); delete q.d; delete q.dt; history.replaceState(null, '', hashFor(state.path, q)); state.query = q; }
   }
@@ -208,6 +222,8 @@
   window.Hub.start = function () {
     $('app-filter').addEventListener('input', drawTree);
     $('drawer-close').addEventListener('click', function () { closeDrawer(); });
+    $('drawer-back').addEventListener('click', function () { moveTrail(-1); });
+    $('drawer-fwd').addEventListener('click', function () { moveTrail(1); });
     $('app-menu').addEventListener('click', function () { var n = $('app-nav'), on = n.classList.toggle('open'); this.setAttribute('aria-expanded', on); });
     $('app-tree').addEventListener('click', function () { $('app-nav').classList.remove('open'); });
     render();
