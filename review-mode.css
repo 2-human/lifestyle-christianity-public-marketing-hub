@@ -194,3 +194,5 @@
 [data-review-mode="on"] .rw-qa-a{margin-top:7px;padding:7px 9px;background:#f3fbf8;border-left:3px solid #1f8a6f;border-radius:0 5px 5px 0;white-space:pre-wrap;color:#1a1a1a}
 [data-review-mode="on"] .rw-qa-by{font-size:11px;color:#65676b;margin-top:4px}
 [data-review-mode="on"] .rw-qa-card + .review-group,[data-review-mode="on"] .review-list > .review-group{padding:10px 14px 5px;font:700 11px/1.2 -apple-system,sans-serif;letter-spacing:.05em;text-transform:uppercase;color:#65676b;background:#fafbfc;border-bottom:1px solid #eceef0}
+/* accounts without QA access: no comment pills or status dots */
+html[data-rw-noqa] .review-floating-pill, html[data-rw-noqa] .rw-dots { display:none !important; }

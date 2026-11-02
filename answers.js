@@ -1,8 +1,9 @@
 /* Answers to hub questions, their files, and the Feedback Drawer's comments. One store with two backends:
  * shared (Firestore + Storage, when data/backend.js sets window.HUB_BACKEND) or this browser (localStorage + IndexedDB).
- * The shared login sits in the encrypted bundle, so only someone with the hub password can reach the database. */
+ * With a backend, people sign in with their own account by email link. The account's role decides what they reach:
+ * team = answers and QA comments, client = answers only. Roles are set by an admin; the rules enforce them. */
 (function () {
-  var KEY = 'lc_hub_answers', cache = null, listeners = [], DB = null, F = null, SDK = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-', ROOT = 'hubs/lc', settle;
+  var KEY = 'lc_hub_answers', cache = null, listeners = [], DB = null, F = null, SDK = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-', ROOT = 'hubs/lc', settle, AU = null, MAILKEY = 'lc_signin_email';
   var notify = function () { listeners.forEach(function (f) { f(); }); };
   var local = function () { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
   var write = function (o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} notify(); };
@@ -14,26 +15,55 @@
   function tx(mode, fn) { return db().then(function (d) { return new Promise(function (ok, no) { var s = d.transaction('files', mode).objectStore('files'), q = fn(s); q.onsuccess = function () { ok(q.result); }; q.onerror = function () { no(q.error); }; }); }); }
   var fail = function (e) { console.error('[answers]', e); api.error = true; notify(); };
 
+  /* a sign-in link lands here with ?mode=signIn&oobCode=…; finish it, then drop those parameters from the address */
+  function finishLink(Au, auth) {
+    var href = location.href; if (!Au.isSignInWithEmailLink(auth, href)) return null;
+    var email = ''; try { email = localStorage.getItem(MAILKEY) || ''; } catch (e) {}
+    if (!email) { try { email = (window.prompt('Confirm your email address to finish signing in') || '').trim(); } catch (e) {} }
+    var u = new URL(href); ['mode', 'oobCode', 'apiKey', 'lang', 'continueUrl', 'tenantId'].forEach(function (k) { u.searchParams.delete(k); }); history.replaceState(null, '', u.pathname + u.search + u.hash);
+    if (!email) return null;
+    return Au.signInWithEmailLink(auth, email, href).then(function () { try { localStorage.removeItem(MAILKEY); } catch (e) {} }).catch(function (e) { api.signInError = e.code || 'failed'; console.error('[answers] sign-in link', e); });
+  }
   function connect(cfg) {
     return Promise.all(['app', 'auth', 'firestore', 'storage'].map(function (m) { return import(SDK + m + '.js'); })).then(function (M) {
       var A = M[0], Au = M[1], Fs = M[2], St = M[3], app = A.initializeApp(cfg.firebase), auth = Au.getAuth(app), store = Fs.getFirestore(app), files = St.getStorage(app);
       if (cfg.emulator) { Au.connectAuthEmulator(auth, 'http://127.0.0.1:9199', { disableWarnings: true }); Fs.connectFirestoreEmulator(store, '127.0.0.1', 8180); St.connectStorageEmulator(files, '127.0.0.1', 9299); }
-      F = { Fs: Fs, St: St, store: store, files: files, col: function (n) { return Fs.collection(store, ROOT + '/' + n); }, doc: function (n, id) { return Fs.doc(store, ROOT + '/' + n, id); } };
-      return Au.signInWithEmailAndPassword(auth, cfg.email, cfg.password);
-    }).then(function () {
-      return new Promise(function (ok, no) {
-        F.Fs.onSnapshot(F.col('answers'), function (snap) { var o = {}; snap.forEach(function (d) { o[d.id] = d.data(); }); cache = o; api.shared = true; ok(); notify(); }, function (e) { no(e); });
+      AU = { Au: Au, auth: auth };
+      return Promise.resolve(finishLink(Au, auth)).then(function () {
+        return new Promise(function (ok) {
+          var first = true;
+          Au.onAuthStateChanged(auth, function (u) {
+            /* a sign-in or sign-out after start (another tab, the menu) reloads, so every part of the hub sees one account */
+            if (!first) { if ((u ? u.uid : null) !== (api.user ? api.user.uid : null)) location.reload(); return; }
+            first = false; if (!u) return ok();
+            u.getIdTokenResult().then(function (t) { api.user = { uid: u.uid, email: u.email, name: u.displayName || u.email, role: t.claims.role || '' }; ok(); }, function () { ok(); });
+          });
+        });
+      }).then(function () {
+        if (!api.canAnswer()) return;
+        F = { Fs: Fs, St: St, store: store, files: files, col: function (n) { return Fs.collection(store, ROOT + '/' + n); }, doc: function (n, id) { return Fs.doc(store, ROOT + '/' + n, id); } };
+        return new Promise(function (ok, no) {
+          F.Fs.onSnapshot(F.col('answers'), function (snap) { var o = {}; snap.forEach(function (d) { o[d.id] = d.data(); }); cache = o; api.shared = true; ok(); notify(); }, function (e) { no(e); });
+        });
       });
     });
   }
 
   var api = window.HubAnswers = {
-    shared: false, error: false,
+    shared: false, error: false, backend: false, user: null, signInError: null,
+    canAnswer: function () { return !!api.user && (api.user.role === 'team' || api.user.role === 'client'); },
+    canQA: function () { return !!api.user && api.user.role === 'team'; },
+    /* emails a one-time sign-in link; only accounts an admin created can use it (sign-up is closed) */
+    signIn: function (email) {
+      if (!AU) return Promise.reject(new Error('no backend'));
+      return AU.Au.sendSignInLinkToEmail(AU.auth, email, { url: location.origin + location.pathname, handleCodeInApp: true }).then(function () { try { localStorage.setItem(MAILKEY, email); } catch (e) {} });
+    },
+    signOut: function () { return AU ? AU.Au.signOut(AU.auth) : Promise.resolve(); },
     /* settles once the backend is known; the Feedback Drawer waits for it */
     ready: new Promise(function (ok) { settle = ok; }),
     start: function () {
-      var cfg = window.HUB_BACKEND;
-      (cfg ? connect(cfg).catch(function (e) { F = null; cache = null; api.error = true; console.error('[answers] shared storage unavailable', e); }) : Promise.resolve()).then(function () { settle(); notify(); });
+      var cfg = window.HUB_BACKEND; api.backend = !!cfg;
+      (cfg ? connect(cfg).catch(function (e) { F = null; cache = null; api.shared = false; api.error = true; console.error('[answers] shared storage unavailable', e); }) : Promise.resolve()).then(function () { settle(); notify(); });
     },
     all: function () { return cache || local(); },
     get: function (id) { return api.all()[id] || null; },
@@ -52,9 +82,9 @@
     },
     getFile: function (meta) { return F && meta.path ? F.St.getBlob(F.St.ref(F.files, meta.path)) : tx('readonly', function (s) { return s.get(meta.id); }); },
     dropFile: function (id, path) { return F && path ? F.St.deleteObject(F.St.ref(F.files, path)).catch(fail) : tx('readwrite', function (s) { return s.delete(id); }); },
-    /* the Feedback Drawer's comments, when shared storage is on */
+    /* the Feedback Drawer's QA comments: team accounts only */
     comments: function () {
-      if (!F) return null;
+      if (!F || !api.canQA()) return null;
       return { local: false,
         subscribe: function (fn) { return F.Fs.onSnapshot(F.col('comments'), function (snap) { var o = {}; snap.forEach(function (d) { o[d.id] = d.data(); }); fn(o); }, fail); },
         create: function (rec) { return F.Fs.addDoc(F.col('comments'), rec).then(function (r) { return r.id; }); },

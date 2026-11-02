@@ -129,7 +129,7 @@ const cssq = v => (window.CSS && CSS.escape) ? CSS.escape(v) : v;
 let SIDE,LIST,TABS,PILL,ROUTE,ADAPTER,ME,COMMENTS={},FILTER='open',curEl=null,curId=null,hideT=null;
 let SELID=null,SELANCHOR=null;
 /* Q&A: the questions a page publishes in window.HUB_QUESTIONS, with answers from window.HubAnswers. A question opens in the hub's own drawer. */
-let MODE='qa',MODES,SCOPEEL,QTABS,QFILTER='todo';
+let MODE='qa',MODES,SCOPEEL,QTABS,QFILTER='todo',NOQA=false;
 const questions=()=>window.HUB_QUESTIONS||[];
 const answerOf=qid=>window.HubAnswers?HubAnswers.get(qid):null;
 const TAB_OF={open:'pending',resolved:'resolved'};
@@ -228,6 +228,7 @@ function modal(title,ctx,initText,initRepl,onSave){
   ov.onclick=e=>{if(e.target===ov)ov.remove()};document.body.appendChild(ov);ta.focus();
 }
 function openComposer(anchor,elm){
+  if(NOQA)return;
   /* the composer shows the element's text so the reviewer knows what they are commenting on; it is not stored */
   const live=(elm.textContent||'').replace(/\s+/g,' ').trim().slice(0,90)||(elm.querySelector('img,video')?'[image]':'');
   const inDrawer = rootIsDrawer(elm);
@@ -382,11 +383,17 @@ function syncRoute(){
 }
 
 (async function init(){
-  ME=reviewer();
-  if(window.HubAnswers)await HubAnswers.ready;   /* behind the gate this settles after the hub is unlocked */
-  const shared=window.HubAnswers&&HubAnswers.comments();
-  try{ADAPTER=shared||(FB_OK?await firebaseAdapter():localAdapter());}catch(e){console.warn('[review] firebase init failed, using local',e);ADAPTER=localAdapter();}
+  const HA=window.HubAnswers;
+  if(HA)await HA.ready;   /* behind the gate this settles after the hub is unlocked */
+  /* with hub accounts, the name is the signed-in account and QA comments are for team accounts only */
+  const acct=!!(HA&&HA.backend);
+  ME=acct?(HA.user?HA.user.name:'Not signed in'):reviewer();
+  NOQA=acct&&!HA.canQA();
+  const shared=HA&&HA.comments();
+  if(NOQA)ADAPTER={local:false,subscribe(fn){fn({});return()=>{}},create(){return Promise.reject(new Error('QA is for team accounts'))},update(){return Promise.reject()},remove(){return Promise.reject()}};
+  else try{ADAPTER=shared||(FB_OK?await firebaseAdapter():localAdapter());}catch(e){console.warn('[review] firebase init failed, using local',e);ADAPTER=localAdapter();}
   buildChrome();
+  if(NOQA){ document.documentElement.setAttribute('data-rw-noqa',''); MODES.querySelector('[data-m="qa"]').remove(); setMode('answers'); }
   anchorPass();
   /* re-anchor + redraw on new content (screen render, drawer open, list filters), batched to one microtask */
   let scheduled=false;
@@ -413,7 +420,7 @@ function syncRoute(){
   setInterval(()=>{ const o=ROOTS.map(r=>drawerOpen(r[0])?1:0).join(''); if(location.hash!==LASTHASH||o!==lastOpen){ lastOpen=o; soon(); } },400);
   window.__rwRefresh=render;
   if(window.HubAnswers)HubAnswers.onChange(render);
-  QTABS.style.display='none';
+  if(!NOQA)QTABS.style.display='none';
   ADAPTER.subscribe(data=>{COMMENTS=data||{};render();if(FOCUS)tryFocus();});
 })();
 })();  /* js-isolation: the whole widget is one IIFE; window.__rwRefresh is the only hook */

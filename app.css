@@ -171,3 +171,4 @@ img { max-width:100%; }
   .chk { flex-direction:column; gap:1px; } .chk-m { padding-left:22px; white-space:normal; }
 }
 .exec h3 { font-size:14px; margin:20px 0 8px; }
+.acct { display:flex; flex-wrap:wrap; gap:4px 8px; align-items:baseline; font-size:12.5px; color:var(--mute); padding:10px 4px 0; border-top:1px solid var(--line); margin-top:8px; overflow-wrap:anywhere; } .acct:empty { display:none; }
