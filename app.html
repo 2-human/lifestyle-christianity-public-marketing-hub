@@ -38,19 +38,21 @@
   <div class="drawer-body" id="drawer-body"></div>
 </aside>
 <div class="gate" id="gate" hidden>
-  <form class="gate-card" id="gate-form" autocomplete="off">
+  <form class="gate-card" id="gate-form">
     <h1>Marketing Hub</h1>
-    <p>Enter the hub password.</p>
-    <label for="gate-pw">Password</label>
-    <input id="gate-pw" type="password" required autocomplete="current-password">
-    <button class="btn" type="submit">Open the hub</button>
+    <p>Sign in with your work email. We send you a one-time link; open it in this browser and the hub opens.</p>
+    <div class="gate-field"><label for="gate-email">Your work email</label>
+    <input id="gate-email" type="email" required autocomplete="email"></div>
+    <button class="btn" type="submit">Email me a sign-in link</button>
+    <button class="btn" type="button" id="gate-out" hidden>Sign out</button>
     <p class="note" id="gate-msg" role="status" aria-live="polite"></p>
   </form>
 </div>
 <div id="chart-tip" class="chart-tip" hidden></div>
-<script src="answers.js?v=3"></script>
+<script src="firebase-config.js?v=1"></script>
+<script src="answers.js?v=4"></script>
 <script src="hub-core.js?v=7"></script>
-<script src="gate.js?v=5"></script>
+<script src="gate.js?v=6"></script>
 <script src="review.config.js?v=4"></script>
 <script src="review-bootstrap.js?v=1"></script>
 </body>

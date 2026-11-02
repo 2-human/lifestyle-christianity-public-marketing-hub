@@ -24,11 +24,16 @@
     if (!email) return null;
     return Au.signInWithEmailLink(auth, email, href).then(function () { try { localStorage.removeItem(MAILKEY); } catch (e) {} }).catch(function (e) { api.signInError = e.code || 'failed'; console.error('[answers] sign-in link', e); });
   }
-  function connect(cfg) {
-    return Promise.all(['app', 'auth', 'firestore', 'storage'].map(function (m) { return import(SDK + m + '.js'); })).then(function (M) {
+  /* sign-in state, once per page: the gate needs it before the hub loads, the store after */
+  var INIT = null, SDKS = null;
+  function init() {
+    var cfg = window.HUB_BACKEND; api.backend = !!cfg;
+    if (!cfg) return Promise.resolve();
+    if (INIT) return INIT;
+    INIT = Promise.all(['app', 'auth', 'firestore', 'storage'].map(function (m) { return import(SDK + m + '.js'); })).then(function (M) {
       var A = M[0], Au = M[1], Fs = M[2], St = M[3], app = A.initializeApp(cfg.firebase), auth = Au.getAuth(app), store = Fs.getFirestore(app), files = St.getStorage(app);
       if (cfg.emulator) { Au.connectAuthEmulator(auth, 'http://127.0.0.1:9199', { disableWarnings: true }); Fs.connectFirestoreEmulator(store, '127.0.0.1', 8180); St.connectStorageEmulator(files, '127.0.0.1', 9299); }
-      AU = { Au: Au, auth: auth };
+      AU = { Au: Au, auth: auth }; SDKS = { Fs: Fs, St: St, store: store, files: files };
       return Promise.resolve(finishLink(Au, auth)).then(function () {
         return new Promise(function (ok) {
           var first = true;
@@ -39,12 +44,17 @@
             u.getIdTokenResult().then(function (t) { api.user = { uid: u.uid, email: u.email, name: u.displayName || u.email, role: t.claims.role || '' }; ok(); }, function () { ok(); });
           });
         });
-      }).then(function () {
-        if (!api.canAnswer()) return;
-        F = { Fs: Fs, St: St, store: store, files: files, col: function (n) { return Fs.collection(store, ROOT + '/' + n); }, doc: function (n, id) { return Fs.doc(store, ROOT + '/' + n, id); } };
-        return new Promise(function (ok, no) {
-          F.Fs.onSnapshot(F.col('answers'), function (snap) { var o = {}; snap.forEach(function (d) { o[d.id] = d.data(); }); cache = o; api.shared = true; ok(); notify(); }, function (e) { no(e); });
-        });
+      });
+    });
+    return INIT;
+  }
+  function connect() {
+    return init().then(function () {
+      if (!api.canAnswer()) return;
+      var Fs = SDKS.Fs, store = SDKS.store;
+      F = { Fs: Fs, St: SDKS.St, store: store, files: SDKS.files, col: function (n) { return Fs.collection(store, ROOT + '/' + n); }, doc: function (n, id) { return Fs.doc(store, ROOT + '/' + n, id); } };
+      return new Promise(function (ok, no) {
+        F.Fs.onSnapshot(F.col('answers'), function (snap) { var o = {}; snap.forEach(function (d) { o[d.id] = d.data(); }); cache = o; api.shared = true; ok(); notify(); }, function (e) { no(e); });
       });
     });
   }
@@ -59,11 +69,18 @@
       return AU.Au.sendSignInLinkToEmail(AU.auth, email, { url: location.origin + location.pathname, handleCodeInApp: true }).then(function () { try { localStorage.setItem(MAILKEY, email); } catch (e) {} });
     },
     signOut: function () { return AU ? AU.Au.signOut(AU.auth) : Promise.resolve(); },
+    /* the gate's way in: sign-in state first, then the hub's decryption keys, which only accounts with a role can read */
+    init: init,
+    gateKeys: function () {
+      return init().then(function () {
+        if (!api.canAnswer()) return [];
+        return SDKS.Fs.getDoc(SDKS.Fs.doc(SDKS.store, ROOT + '/meta', 'gate')).then(function (d) { return (d.exists() && d.data().keys) || []; });
+      });
+    },
     /* settles once the backend is known; the Feedback Drawer waits for it */
     ready: new Promise(function (ok) { settle = ok; }),
     start: function () {
-      var cfg = window.HUB_BACKEND; api.backend = !!cfg;
-      (cfg ? connect(cfg).catch(function (e) { F = null; cache = null; api.shared = false; api.error = true; console.error('[answers] shared storage unavailable', e); }) : Promise.resolve()).then(function () { settle(); notify(); });
+      (window.HUB_BACKEND ? connect().catch(function (e) { F = null; cache = null; api.shared = false; api.error = true; console.error('[answers] shared storage unavailable', e); }) : Promise.resolve()).then(function () { settle(); notify(); });
     },
     all: function () { return cache || local(); },
     get: function (id) { return api.all()[id] || null; },
