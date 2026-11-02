@@ -3,7 +3,7 @@
  * hub reads its decryption keys from the database (only accounts with a role may), decrypts in the browser (AES-256-GCM,
  * then gunzip), runs the files in order and starts. Nothing that opens the hub is stored in the browser. */
 (function () {
-  var FILES = ['data/facts.js', 'data/audit.js', 'data/evidence.js', 'data/results.js', 'data/assets.js', 'data/proposal.js', 'views.js'];
+  var FILES = ['data/facts.js', 'data/audit.js', 'data/evidence.js', 'data/results.js', 'data/assets.js', 'data/proposal.js', 'data/summary-pdf.js', 'views.js'];
   var $ = function (id) { return document.getElementById(id); };
   var b64 = function (s) { return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); }); };
   function load(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
