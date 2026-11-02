@@ -170,3 +170,4 @@ img { max-width:100%; }
   .fstep { grid-template-columns:96px minmax(0,1fr) 82px; }
   .chk { flex-direction:column; gap:1px; } .chk-m { padding-left:22px; white-space:normal; }
 }
+.exec h3 { font-size:14px; margin:20px 0 8px; }
