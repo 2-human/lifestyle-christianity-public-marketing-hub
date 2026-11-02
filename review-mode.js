@@ -128,6 +128,10 @@ const cssq = v => (window.CSS && CSS.escape) ? CSS.escape(v) : v;
 
 let SIDE,LIST,TABS,PILL,ROUTE,ADAPTER,ME,COMMENTS={},FILTER='open',curEl=null,curId=null,hideT=null;
 let SELID=null,SELANCHOR=null;
+/* Q&A: the questions a page publishes in window.HUB_QUESTIONS, with answers from window.HubAnswers. A question opens in the hub's own drawer. */
+let MODE='qa',MODES,SCOPEEL,QTABS,QFILTER='todo';
+const questions=()=>window.HUB_QUESTIONS||[];
+const answerOf=qid=>window.HubAnswers?HubAnswers.get(qid):null;
 const TAB_OF={open:'pending',resolved:'resolved'};
 let SCOPE='page';   /* 'page' (default: this screen) | 'all' (every hub comment, grouped by screen); session-only */
 let FOCUS=null;     /* a comment to spotlight once its screen has rendered (cross-screen jump) */
@@ -154,7 +158,12 @@ function buildChrome(){
 
   SIDE=el('aside','review-sidebar');
   SIDE.appendChild(el('h3',null,'<span>'+esc(L.sidebarTitle)+'</span>'));
-  const SCOPEBAR=el('div','rw-scopebar');
+  MODES=el('div','rw-modes');
+  [['qa',L.modeQA],['answers',L.modeAnswers]].forEach(([k,lbl])=>{
+    const b=el('button',k===MODE?'on':null,esc(lbl)); b.type='button'; b.dataset.m=k; b.onclick=()=>setMode(k); MODES.appendChild(b);
+  });
+  SIDE.appendChild(MODES);
+  const SCOPEBAR=el('div','rw-scopebar'); SCOPEEL=SCOPEBAR;
   [['page',L.scopePage],['all',L.scopeAll]].forEach(([k,lbl])=>{
     const b=el('button',k===SCOPE?'on':null,esc(lbl)); b.dataset.s=k;
     b.onclick=()=>{SCOPE=k;SCOPEBAR.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.s===k));render();};
@@ -168,6 +177,13 @@ function buildChrome(){
     TABS.appendChild(b);
   });
   SIDE.appendChild(TABS);
+  QTABS=el('div','review-tabs rw-qtabs');
+  [['todo',L.tabToAnswer],['done',L.tabAnswered]].forEach(([k,lbl])=>{
+    const b=el('button',k===QFILTER?'on':null,esc(lbl)+' <span class="rw-c">0</span>'); b.type='button'; b.dataset.k=k;
+    b.onclick=()=>{QFILTER=k;QTABS.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.k===k));render();};
+    QTABS.appendChild(b);
+  });
+  SIDE.appendChild(QTABS);
   LIST=el('div','review-list'); SIDE.appendChild(LIST); document.body.appendChild(SIDE);
   /* phones start with the sidebar hidden (it would cover the screen); elsewhere the last choice is kept */
   const saved = store.get('mh_rw_side');
@@ -226,6 +242,29 @@ function saveOr(pr, what){ return Promise.resolve(pr).catch(e=>{ console.warn('[
 function actBtn(label,cls,fn){const b=el('button',cls,esc(label));b.onclick=ev=>{ev.stopPropagation();fn()};return b;}
 function targetOf(c){ if(!c||!visibleHere(c))return null; return visibleTarget(document.querySelector('[data-comment-id="'+cssq(c.anchor)+'"]')); }
 function visibleTarget(e0){ for(let e=e0; e && e.getBoundingClientRect; e=e.parentElement){ const r=e.getBoundingClientRect(); if(r.width||r.height) return e; } return null; }
+function setMode(m){
+  MODE=m; MODES.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.m===m));
+  SCOPEEL.style.display=TABS.style.display=m==='qa'?'':'none'; QTABS.style.display=m==='answers'?'':'none';
+  LIST.dataset.mode=''; render();
+}
+function renderAnswers(){
+  const qs=questions(), done=qs.filter(q=>answerOf(q.id));
+  QTABS.querySelector('[data-k="todo"] .rw-c').textContent=qs.length-done.length; QTABS.querySelector('[data-k="done"] .rw-c').textContent=done.length;
+  const show=qs.filter(q=>QFILTER==='done'?answerOf(q.id):!answerOf(q.id));
+  LIST.innerHTML='';
+  LIST.appendChild(el('div','rw-qa-prog','<span>'+done.length+' of '+qs.length+' '+esc(L.answeredCount)+'</span><i><b style="width:'+(qs.length?done.length/qs.length*100:0)+'%"></b></i>'));
+  if(!show.length){LIST.appendChild(el('div','review-empty',esc(QFILTER==='done'?L.emptyAnswered:L.emptyToAnswer)));return}
+  let group=null;
+  show.forEach(q=>{
+    if(q.group!==group){group=q.group;LIST.appendChild(el('div','review-group',esc(group)));}
+    const a=answerOf(q.id), card=el('button','rw-qa-card'); card.type='button'; card.dataset.q=q.id;
+    card.appendChild(el('div','rw-qa-q',esc(q.q)));
+    card.appendChild(el('div','rw-qa-why',q.when?esc(q.when):''));
+    if(a){card.appendChild(el('div','rw-qa-a',esc(a.summary||'')));card.appendChild(el('div','rw-qa-by',esc(a.author||'')+' · '+esc(when(a.timestamp))+(a.files&&a.files.length?' · '+a.files.length+' '+esc(L.filesLabel):'')));}
+    card.onclick=()=>{ if(window.Hub) Hub.open('qa:'+q.id); };
+    LIST.appendChild(card);
+  });
+}
 function render(){
   if(!LIST)return;
   if(ROUTE) ROUTE.textContent = '· ' + currentTitle() + (DRAWER ? ' · ' + drawerLabel(DRAWER) : '');
@@ -250,6 +289,7 @@ function render(){
       d.innerHTML=h;a.appendChild(d);
     });
   });
+  if(MODE==='answers'){applyActive();renderAnswers();return}
   const want=TAB_OF[FILTER];
   const rows=readingOrder(listSource.filter(([id,c])=>statusOf(c)===want));
   LIST.innerHTML='';
@@ -343,7 +383,9 @@ function syncRoute(){
 
 (async function init(){
   ME=reviewer();
-  try{ADAPTER=FB_OK?await firebaseAdapter():localAdapter();}catch(e){console.warn('[review] firebase init failed, using local',e);ADAPTER=localAdapter();}
+  if(window.HubAnswers)await HubAnswers.ready;   /* behind the gate this settles after the hub is unlocked */
+  const shared=window.HubAnswers&&HubAnswers.comments();
+  try{ADAPTER=shared||(FB_OK?await firebaseAdapter():localAdapter());}catch(e){console.warn('[review] firebase init failed, using local',e);ADAPTER=localAdapter();}
   buildChrome();
   anchorPass();
   /* re-anchor + redraw on new content (screen render, drawer open, list filters), batched to one microtask */
@@ -370,6 +412,8 @@ function syncRoute(){
   let lastOpen='';
   setInterval(()=>{ const o=ROOTS.map(r=>drawerOpen(r[0])?1:0).join(''); if(location.hash!==LASTHASH||o!==lastOpen){ lastOpen=o; soon(); } },400);
   window.__rwRefresh=render;
+  if(window.HubAnswers)HubAnswers.onChange(render);
+  QTABS.style.display='none';
   ADAPTER.subscribe(data=>{COMMENTS=data||{};render();if(FOCUS)tryFocus();});
 })();
 })();  /* js-isolation: the whole widget is one IIFE; window.__rwRefresh is the only hook */

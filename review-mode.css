@@ -179,3 +179,18 @@
 [data-review-mode="on"] .review-row .rw-meta{flex-wrap:wrap;align-items:center}
 [data-review-mode="on"] .review-row .rw-drawer-chip{white-space:normal;max-width:100%;overflow-wrap:anywhere}
 @media (max-width:600px){[data-review-mode="on"] .review-banner .rw-name{display:none}[data-review-mode="on"] .review-banner{gap:8px;padding:0 10px}}
+
+/* ───── Feedback Drawer: QA and Q&A ───── */
+[data-review-mode="on"] .rw-modes{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid #eceef0}
+[data-review-mode="on"] .rw-modes button{flex:1;border:1px solid #d9dbe0;background:#fff;border-radius:6px;padding:7px 4px;font:600 12.5px/1 -apple-system,sans-serif;color:#65676b;cursor:pointer}
+[data-review-mode="on"] .rw-modes button.on{background:var(--rw-ink);border-color:var(--rw-ink);color:#fff}
+[data-review-mode="on"] .rw-qa-prog{padding:10px 14px;font:500 12px/1.3 -apple-system,sans-serif;color:#65676b}
+[data-review-mode="on"] .rw-qa-prog i{display:block;height:5px;background:#eceef0;border-radius:3px;margin-top:5px;overflow:hidden}
+[data-review-mode="on"] .rw-qa-prog b{display:block;height:100%;background:var(--rw-deep)}
+[data-review-mode="on"] .rw-qa-card{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid #eceef0;padding:11px 14px;font:13px/1.4 -apple-system,sans-serif;cursor:pointer}
+[data-review-mode="on"] .rw-qa-card:hover{background:#fafbfc}
+[data-review-mode="on"] .rw-qa-q{font-weight:600;color:#1a1a1a;line-height:1.35}
+[data-review-mode="on"] .rw-qa-why{font-size:12px;color:#65676b;margin-top:3px}
+[data-review-mode="on"] .rw-qa-a{margin-top:7px;padding:7px 9px;background:#f3fbf8;border-left:3px solid #1f8a6f;border-radius:0 5px 5px 0;white-space:pre-wrap;color:#1a1a1a}
+[data-review-mode="on"] .rw-qa-by{font-size:11px;color:#65676b;margin-top:4px}
+[data-review-mode="on"] .rw-qa-card + .review-group,[data-review-mode="on"] .review-list > .review-group{padding:10px 14px 5px;font:700 11px/1.2 -apple-system,sans-serif;letter-spacing:.05em;text-transform:uppercase;color:#65676b;background:#fafbfc;border-bottom:1px solid #eceef0}
