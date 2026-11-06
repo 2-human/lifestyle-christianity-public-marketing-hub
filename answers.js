@@ -1,12 +1,13 @@
-/* Answers to hub questions, their files, and the Feedback Drawer's comments. One store with two backends:
+/* Answers to hub questions, their files, task outcomes, and the Feedback Drawer's comments. One store with two backends:
  * shared (Firestore + Storage, when data/backend.js sets window.HUB_BACKEND) or this browser (localStorage + IndexedDB).
  * With a backend, people sign in with their own account by email link. The account's role decides what they reach:
  * team = answers and QA comments, client = answers only. Roles are set by an admin; the rules enforce them. */
 (function () {
-  var KEY = 'lc_hub_answers', cache = null, listeners = [], DB = null, F = null, SDK = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-', ROOT = 'hubs/lc', settle, AU = null, MAILKEY = 'lc_signin_email';
+  var KEY = 'lc_hub_answers', cache = null, listeners = [], DB = null, F = null, SDK = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-', ROOT = 'hubs/lc', settle, AU = null, MAILKEY = 'lc_signin_email', OKEY = 'lc_audit_outcomes', ocache = null;
   var notify = function () { listeners.forEach(function (f) { f(); }); };
   var local = function () { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
   var write = function (o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} notify(); };
+  var localO = function () { try { return JSON.parse(localStorage.getItem(OKEY) || '{}'); } catch (e) { return {}; } };
   function db() {
     if (DB) return DB;
     DB = new Promise(function (ok, no) { var r = indexedDB.open('lc_hub_files', 1); r.onupgradeneeded = function () { r.result.createObjectStore('files'); }; r.onsuccess = function () { ok(r.result); }; r.onerror = function () { no(r.error); }; });
@@ -53,9 +54,10 @@
       if (!api.canAnswer()) return;
       var Fs = SDKS.Fs, store = SDKS.store;
       F = { Fs: Fs, St: SDKS.St, store: store, files: SDKS.files, col: function (n) { return Fs.collection(store, ROOT + '/' + n); }, doc: function (n, id) { return Fs.doc(store, ROOT + '/' + n, id); } };
-      return new Promise(function (ok, no) {
-        F.Fs.onSnapshot(F.col('answers'), function (snap) { var o = {}; snap.forEach(function (d) { o[d.id] = d.data(); }); cache = o; api.shared = true; ok(); notify(); }, function (e) { no(e); });
-      });
+      var live = function (name, set) {
+        return new Promise(function (ok, no) { F.Fs.onSnapshot(F.col(name), function (snap) { var o = {}; snap.forEach(function (d) { o[d.id] = d.data(); }); set(o); ok(); notify(); }, function (e) { no(e); }); });
+      };
+      return Promise.all([live('answers', function (o) { cache = o; }), live('outcomes', function (o) { ocache = o; })]).then(function () { api.shared = true; notify(); });
     });
   }
 
@@ -92,6 +94,14 @@
       var o = local(); delete o[id]; write(o);
     },
     onChange: function (fn) { listeners.push(fn); },
+    /* task outcomes: { text, done, by, date }, keyed by task id. Claude's generated results are the default the hub shows
+     * until a person saves one; saving needs a signed-in account with a role, or no backend at all (this browser). */
+    outcome: function (id) { return (ocache || localO())[id] || null; },
+    canEditOutcomes: function () { return api.shared || !api.backend; },
+    saveOutcome: function (id, rec) {
+      if (F) { ocache[id] = rec; notify(); return F.Fs.setDoc(F.doc('outcomes', id), rec).catch(fail); }
+      var o = localO(); o[id] = rec; try { localStorage.setItem(OKEY, JSON.stringify(o)); } catch (e) {} notify(); return Promise.resolve();
+    },
     putFile: function (file, qid) {
       var id = 'f' + Date.now() + Math.random().toString(36).slice(2, 7), meta = { id: id, name: file.name, size: file.size, type: file.type };
       if (F) { meta.path = ROOT + '/answers/' + qid + '/' + id; return F.St.uploadBytes(F.St.ref(F.files, meta.path), file, { contentType: file.type || 'application/octet-stream' }).then(function () { return meta; }); }
@@ -109,5 +119,5 @@
         remove: function (id) { return F.Fs.deleteDoc(F.doc('comments', id)); } };
     }
   };
-  window.addEventListener('storage', function (e) { if (e.key === KEY && !F) notify(); });
+  window.addEventListener('storage', function (e) { if ((e.key === KEY || e.key === OKEY) && !F) notify(); });
 })();

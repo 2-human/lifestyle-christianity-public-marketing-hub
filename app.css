@@ -192,3 +192,7 @@ img { max-width:100%; }
   .app-body.has-drawer .app-main { margin-right:460px; } .app-body.has-drawer.drawer-wide .app-main { margin-right:640px; } .app-body.has-drawer.drawer-xwide .app-main { margin-right:min(900px,60vw); }
   .app-drawer.xwide { width:min(900px,60vw); } .app-scrim { display:none; }
 }
+/* task outcome: editable, prefilled by Claude; green once done */
+.res-form.is-done { background:#f3fbf8; border-color:#a9d6c6; } .res-form h3 .chip { margin-left:6px; vertical-align:middle; }
+.wi-form label.odone { display:flex; gap:7px; align-items:flex-start; color:var(--ink); margin:8px 0 2px; } .wi-form label.odone input { margin-top:3px; }
+.res-read { margin-top:10px; } .res-read summary { cursor:pointer; font-size:12.5px; color:var(--mute); }
