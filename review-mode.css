@@ -5,11 +5,9 @@
 [data-review-mode="on"] body{padding-top:46px}
 
 /* commentable elements */
-/* Marketing Hub (MH-95): the hub is dense (tables, cards), so the faint outline shows on hover only, and position:relative
-   is set only on elements that carry comments (their status dots need it), never on every anchor: a blanket relative
-   would undo the hub's sticky table headers in review mode. */
+/* Marketing Hub (MH-95): the hub is dense (tables, cards), so the faint outline shows on hover only. 1.6.0: no stylesheet
+   position at all; review-mode.js gives a commented element an inline position:relative only when it is static, for its dots. */
 [data-review-mode="on"] [data-comment-id]:hover{outline:1px dashed rgba(220,70,70,.45);outline-offset:2px}
-[data-review-mode="on"] .has-comment,[data-review-mode="on"] .has-applied-comment{position:relative}
 [data-review-mode="on"] [data-comment-id].has-comment{outline:1.5px dashed rgba(220,70,70,.65)}
 [data-review-mode="on"] [data-comment-id].rw-spot{outline:2px solid var(--rw-deep);animation:rwpulse 1.1s ease}
 [data-review-mode="on"] [data-comment-id].rw-active-anchor{outline:2.5px solid var(--rw-deep);outline-offset:2px;box-shadow:0 0 0 4px rgba(220,70,70,.18)}
@@ -118,7 +116,6 @@
  * so nothing stood out when you selected one. */
 [data-review-mode="on"] [data-comment-id].has-comment,[data-review-mode="on"] [data-slot].has-comment{outline:1.5px dashed rgba(220,70,70,.65);outline-offset:2px}
 [data-review-mode="on"] [data-comment-id].has-applied-comment,[data-review-mode="on"] [data-slot].has-applied-comment{outline:1.5px dashed rgba(47,125,78,.55);outline-offset:2px}
-[data-review-mode="on"] .has-comment,[data-review-mode="on"] .has-applied-comment{position:relative}
 [data-review-mode="on"] .rw-dots{position:absolute;top:6px;left:100%;margin-left:6px;display:flex;flex-direction:column;gap:4px;z-index:6;pointer-events:none}
 [data-review-mode="on"] .rw-dot{width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 1.5px #fff,0 1px 2px rgba(0,0,0,.3)}
 [data-review-mode="on"] .rw-dot-active{background:var(--rw-deep)}

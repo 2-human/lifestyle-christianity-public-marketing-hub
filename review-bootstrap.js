@@ -1,5 +1,6 @@
 /* review-bootstrap.js — inert-by-default loader for the review widget (Marketing Hub composition, MH-95, 27 Oct 2026;
- * review-widget feature_version 1.3.0).
+ * re-emitted at review-widget feature_version 1.6.0 on 11 Nov 2026). On hub-chassis 1.3.0, views.js loads it with
+ * Hub.ready(() => Hub.load('review-bootstrap.js')) once the data, including data/review-config.js, is in.
  * No ?review=1  -> only a floating entry button (no widget chrome, no backend).
  * ?review=1     -> sets data-review-mode=on, loads review-mode.css + review-mode.js.
  */

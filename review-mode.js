@@ -1,4 +1,12 @@
 /* review-mode.js — review widget for the Marketing Hub (loads only on ?review=1). Classic script.
+ * Re-emitted 11 Nov 2026 at review-widget 1.6.0 for the hub's move onto hub-chassis 1.3.0 (config: data/review-config.js):
+ *  · Review mode never reflows the host page. Outlines are paint-only and the pill is fixed-positioned; the only style
+ *    the widget sets on a host element is an inline position:relative on a commented element that is position:static,
+ *    as the box for its status dots, marked data-rw-pos and removed on the next pass.
+ *  · Storage namespace: every localStorage key starts with STORAGE_PREFIX (required; the widget does not start without
+ *    it). Keys from before (lc_reviewer, lc_review_comments, mh_rw_side) are read once and moved.
+ *  · One backend per client: comments go to this hub's own Firebase project through HubAnswers.comments(), or stay in
+ *    this browser; FIREBASE_CONFIG stays blank.
  * MH-95 (operator 27 Oct 2026): "add the commenting / review module to the marketing hub". Composed from the
  * review-widget feature (organization-template/library/features/review-widget, feature_version 1.3.0), starting from
  * the review-widget feature and adapted to a hash-routed single-page app:
@@ -35,7 +43,10 @@ const FB = CFG.FIREBASE_CONFIG || {};
 const FB_OK = FB.apiKey && FB.apiKey.indexOf('PASTE') !== 0 && FB.databaseURL && FB.databaseURL.indexOf('PASTE') < 0;
 const PREFIX = CFG.PAGE_PREFIX || 'lc-marketing-hub:';
 const _MEM = {};
+const SP = CFG.STORAGE_PREFIX;                  /* required (1.6.0 storage namespace) */
 const store = {get(k){try{return localStorage.getItem(k)}catch(e){return (k in _MEM)?_MEM[k]:null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){_MEM[k]=v}}};
+/* the namespaced key; a value under the key used before 1.6.0 moves over once */
+const nsKey = (name, old) => { const k = SP + name; if (old && store.get(k) == null) { const v = store.get(old); if (v != null) { store.set(k, v); try { localStorage.removeItem(old); } catch (e) {} } } return k; };
 
 /* commentable-everything, 'direct-text' mode : any element with ≥2 chars of its own text, except
  * the deny-list. */
@@ -91,7 +102,7 @@ function anchorPass(){
 }
 function rootIsDrawer(elm){ return !!(elm && elm.closest && elm.closest('#drawer-body,#ldrawer-body')); }
 
-function reviewer(){let n=store.get('lc_reviewer');if(!n){let asked='';try{asked=window.prompt(L.namePrompt,'')}catch(e){}n=(asked||'Anonymous').trim()||'Anonymous';store.set('lc_reviewer',n);}return n;}
+function reviewer(){let n=store.get(nsKey('review-reviewer','lc_reviewer'));if(!n){let asked='';try{asked=window.prompt(L.namePrompt,'')}catch(e){}n=(asked||'Anonymous').trim()||'Anonymous';store.set(nsKey('review-reviewer'),n);}return n;}
 function statusOf(c){ const s=c.status; if(s==='resolved'||s==='applied'||s==='archived'||c.archived||c.applied)return 'resolved'; return 'pending'; }
 const isHub = c => c && typeof c.page === 'string' && c.page.indexOf(PREFIX) === 0;
 /* on this screen: same screen key; a drawer comment only while that drawer is open on the same tab */
@@ -100,7 +111,7 @@ const visibleHere = c => onScreen(c) && (!c.drawer || c.drawer === DRAWER);
 
 /* ---- adapters (as 1.3.0) ---- */
 function localAdapter(){
-  const KEY='lc_review_comments'; let cb=null;
+  const KEY=nsKey('review-comments','lc_review_comments'); let cb=null;
   const read=()=>{try{return JSON.parse(store.get(KEY)||'{}')}catch(e){return {}}};
   const write=o=>store.set(KEY,JSON.stringify(o)); const ping=()=>cb&&cb(read());
   return { local:true,
@@ -146,7 +157,7 @@ function pageLabel(page){
 function drawerLabel(dr){ const q = new URLSearchParams(dr||''); return (q.get('d')||'').replace(/-/g,' ') + (q.get('dt') ? ' · ' + q.get('dt') : ''); }
 function currentTitle(){ return (document.title||'').split(' · ')[0] || pageLabel(SLUG); }
 
-function setSide(hidden){ document.documentElement.setAttribute('data-rw-side', hidden ? 'hidden' : 'shown'); if (SIDE) SIDE.classList.toggle('rw-collapsed', hidden); const b = document.querySelector('.rw-side-btn'); if (b) b.textContent = hidden ? L.showSide : L.hideSide; store.set('mh_rw_side', hidden ? 'hidden' : 'shown'); }
+function setSide(hidden){ document.documentElement.setAttribute('data-rw-side', hidden ? 'hidden' : 'shown'); if (SIDE) SIDE.classList.toggle('rw-collapsed', hidden); const b = document.querySelector('.rw-side-btn'); if (b) b.textContent = hidden ? L.showSide : L.hideSide; store.set(nsKey('review-side'), hidden ? 'hidden' : 'shown'); }
 
 function buildChrome(){
   const ban=el('div','review-banner');
@@ -186,7 +197,7 @@ function buildChrome(){
   SIDE.appendChild(QTABS);
   LIST=el('div','review-list'); SIDE.appendChild(LIST); document.body.appendChild(SIDE);
   /* phones start with the sidebar hidden (it would cover the screen); elsewhere the last choice is kept */
-  const saved = store.get('mh_rw_side');
+  const saved = store.get(nsKey('review-side','mh_rw_side'));
   setSide(saved ? saved === 'hidden' : window.matchMedia('(max-width:900px)').matches);
 
   PILL=el('button','review-floating-pill',esc(L.add)); PILL.type='button'; PILL.setAttribute('data-review-skip','');
@@ -279,12 +290,15 @@ function render(){
   /* comment-status-indicators: outline + one dot per comment (red open, green resolved) on what is on screen now */
   document.querySelectorAll('.has-comment,.has-applied-comment').forEach(e=>e.classList.remove('has-comment','has-applied-comment'));
   document.querySelectorAll('.rw-dots').forEach(e=>e.remove());
+  document.querySelectorAll('[data-rw-pos]').forEach(e=>{ if(e.style.position==='relative')e.style.position=''; e.removeAttribute('data-rw-pos'); });
   const byTarget={};
   here.forEach(([id,c])=>{ const r=byTarget[c.anchor]||(byTarget[c.anchor]={active:0,resolved:0}); if(statusOf(c)==='resolved')r.resolved++;else r.active++; });
   Object.keys(byTarget).forEach(an=>{
     const r=byTarget[an];
     document.querySelectorAll('[data-comment-id="'+cssq(an)+'"]').forEach(a=>{
       a.classList.add(r.active>0?'has-comment':'has-applied-comment');
+      /* 1.6.0: a box for the dots only where the host left the element static; a positioned element is left alone */
+      if(getComputedStyle(a).position==='static'){a.style.position='relative';a.setAttribute('data-rw-pos','');}
       const d=document.createElement('span');d.className='rw-dots';d.setAttribute('aria-hidden','true');
       let h='';for(let i=0;i<r.active;i++)h+='<i class="rw-dot rw-dot-active"></i>';for(let i=0;i<r.resolved;i++)h+='<i class="rw-dot rw-dot-resolved"></i>';
       d.innerHTML=h;a.appendChild(d);
@@ -383,6 +397,7 @@ function syncRoute(){
 }
 
 (async function init(){
+  if(!SP){console.error('[review] STORAGE_PREFIX is not set in HUB_REVIEW_CONFIG; the widget does not start');return;}
   const HA=window.HubAnswers;
   if(HA)await HA.ready;   /* behind the gate this settles after the hub is unlocked */
   /* with hub accounts, the name is the signed-in account and QA comments are for team accounts only */
