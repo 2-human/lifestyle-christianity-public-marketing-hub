@@ -1,9 +1,16 @@
 /* Answers to hub questions, their files, task outcomes, and the Feedback Drawer's comments. One store with two backends:
  * shared (Firestore + Storage, when firebase-config.js sets window.FIREBASE_CONFIG) or this browser (localStorage + IndexedDB).
  * With a backend, people sign in with their own account by email link. The account's role decides what they reach:
- * team = answers and QA comments, client = answers only. Roles are set by an admin; the rules enforce them. */
+ * team = answers and QA comments, client = answers only. Roles are set by an admin; the rules enforce them.
+ * Public view (public-view.js): the index of shares at hubs/lc/public (team writes, team and client read) and each share's
+ * copy in Storage at hubs/lc/public/<token>.json and <token>.<n>.json, which anyone holding the token can read (view.html);
+ * only team writes or removes one. While a copy is made, `capturing` is true and the store answers nothing (no answer can
+ * be drawn into a copy) and outcomes read as read-only text.
+ * window.HUB_PUBLIC_SEED = { outcomes } (set only by tools/marketing-hub/public-refresh.mjs in its headless browser): the
+ * store serves those outcomes read-only, has no answers, and connects to nothing. */
 (function () {
   var KEY = 'lc_hub_answers', cache = null, listeners = [], DB = null, F = null, SDK = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-', ROOT = 'hubs/lc', settle, AU = null, MAILKEY = 'lc_signin_email', HASHKEY = 'lc_signin_hash', OKEY = 'lc_audit_outcomes', ocache = null;
+  var SEED = window.HUB_PUBLIC_SEED || null;
   var notify = function () { listeners.forEach(function (f) { f(); }); };
   var local = function () { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
   var write = function (o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} notify(); };
@@ -89,9 +96,11 @@
     /* settles once the backend is known; the Feedback Drawer waits for it */
     ready: new Promise(function (ok) { settle = ok; }),
     start: function () {
+      if (SEED) { cache = {}; ocache = SEED.outcomes || {}; api.backend = true; api.shared = false; settle(); notify(); return; }
       (window.FIREBASE_CONFIG ? connect().catch(function (e) { F = null; cache = null; api.shared = false; api.error = true; console.error('[answers] shared storage unavailable', e); }) : Promise.resolve()).then(function () { settle(); notify(); });
     },
-    all: function () { return cache || local(); },
+    capturing: false,
+    all: function () { return api.capturing ? {} : cache || local(); },
     get: function (id) { return api.all()[id] || null; },
     save: function (id, rec) { if (F) { cache[id] = rec; notify(); F.Fs.setDoc(F.doc('answers', id), rec).catch(fail); return; } var o = local(); o[id] = rec; write(o); },
     remove: function (id) {
@@ -104,7 +113,7 @@
     /* task outcomes: { text, done, by, date }, keyed by task id. Claude's generated results are the default the hub shows
      * until a person saves one; saving needs a signed-in account with a role, or no backend at all (this browser). */
     outcome: function (id) { return (ocache || localO())[id] || null; },
-    canEditOutcomes: function () { return api.shared || !api.backend; },
+    canEditOutcomes: function () { return !api.capturing && (api.shared || !api.backend); },
     saveOutcome: function (id, rec) {
       if (F) { ocache[id] = rec; notify(); return F.Fs.setDoc(F.doc('outcomes', id), rec).catch(fail); }
       var o = localO(); o[id] = rec; try { localStorage.setItem(OKEY, JSON.stringify(o)); } catch (e) {} notify(); return Promise.resolve();
@@ -116,6 +125,36 @@
     },
     getFile: function (meta) { return F && meta.path ? F.St.getBlob(F.St.ref(F.files, meta.path)) : tx('readonly', function (s) { return s.get(meta.id); }); },
     dropFile: function (id, path) { return F && path ? F.St.deleteObject(F.St.ref(F.files, path)).catch(fail) : tx('readwrite', function (s) { return s.delete(id); }); },
+    /* Public view (public-view.js): the index of shares and their copies. A copy is files: <token>.json, the manifest, and
+     * parts <token>.<n>.json. put() uploads the parts, then the manifest, then drops parts the last copy had and this one
+     * does not, and only then writes the index; remove() takes the manifest down first, then the parts and the index: the
+     * manifest is what makes a link work, so a half-done step never leaves a link working that the index says is off.
+     * Any account with a role reads the index; only team writes (canShare, and the rules). */
+    publicPages: function () {
+      if (!F || !api.canAnswer()) return null;
+      var path = function (token, n) { return ROOT + '/public/' + token + (n ? '.' + n : '') + '.json'; };
+      var up = function (p, json) { return F.St.uploadBytes(F.St.ref(F.files, p), new Blob([json], { type: 'application/json' }), { contentType: 'application/json', cacheControl: 'no-cache' }); };
+      var drop = function (p) { return F.St.deleteObject(F.St.ref(F.files, p)).catch(function (e) { if (!e || e.code !== 'storage/object-not-found') throw e; }); };
+      var range = function (from, to) { var o = []; for (var i = from; i < to; i++) o.push(i); return o; };
+      return {
+        canShare: api.canQA(),
+        who: function () { return api.user ? api.user.name : ''; },
+        subscribe: function (fn) { return F.Fs.onSnapshot(F.col('public'), function (snap) { var o = {}; snap.forEach(function (d) { o[d.id] = d.data(); }); fn(o); }, function (e) { console.error('[answers] public index', e); fn(null); }); },
+        /* files: [manifest, part 1, …]; oldParts: how many files the share had (0 for a new share) */
+        put: function (key, rec, files, oldParts) {
+          var tok = rec.token, n = files.length;
+          return Promise.all(range(1, n).map(function (i) { return up(path(tok, i), files[i]); }))
+            .then(function () { return up(path(tok, 0), files[0]); })
+            .then(function () { return Promise.all(range(n, oldParts || 0).map(function (i) { return drop(path(tok, i)); })); })
+            .then(function () { var r = Object.assign({}, rec, { uid: api.user.uid }); return F.Fs.setDoc(F.doc('public', key), r).then(function () { return r; }); });
+        },
+        remove: function (key, token, parts) {
+          return drop(path(token, 0))
+            .then(function () { return Promise.all(range(1, parts || 1).map(function (i) { return drop(path(token, i)); })); })
+            .then(function () { return F.Fs.deleteDoc(F.doc('public', key)); });
+        }
+      };
+    },
     /* the Feedback Drawer's QA comments: team accounts only */
     comments: function () {
       if (!F || !api.canQA()) return null;

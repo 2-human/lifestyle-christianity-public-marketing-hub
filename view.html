@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Marketing Hub</title>
+<!-- The public view of a share, one hub page or a set of them (public-view.js makes the copy). Plain shell, published in
+     the clear by design: this page and view.js hold no hub data and need no sign-in. The copy is fetched from Storage by
+     the token after the #. -->
+<link rel="stylesheet" href="chassis/hub-core.css?v=d09116bc80">
+<link rel="stylesheet" href="chassis/hub-modules.css?v=7d84d23954">
+<link rel="stylesheet" href="skin.css?v=b4c778eceb">
+</head>
+<body class="app-body pv-public">
+<header class="app-bar" id="app-bar">
+  <span class="brand" id="app-brand"></span>
+  <div class="bar-right" id="app-right"><button type="button" class="topbtn" id="pv-share" hidden></button><button type="button" class="topbtn" id="pv-print" hidden></button></div>
+</header>
+<div class="app-grid">
+  <nav class="pv-menu" id="pv-menu" hidden></nav>
+  <main class="app-main" id="app-main" tabindex="-1"></main>
+</div>
+<div class="app-scrim" id="app-scrim" hidden></div>
+<aside class="app-drawer" id="app-drawer" aria-hidden="true" aria-labelledby="drawer-title" inert>
+  <div class="drawer-head">
+    <div class="drawer-id"><h2 id="drawer-title"></h2><div class="drawer-sub" id="drawer-sub"></div></div>
+    <button class="drawer-close" id="drawer-close" type="button">&times;</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+<script src="hub.config.js?v=ef8eb0d5c5"></script>
+<script src="firebase-config.js?v=83ddbcc2fa"></script>
+<script src="view.js?v=bb191b2965"></script>
+</body>
+</html>
